@@ -531,8 +531,12 @@ function spawnBubbles(count) {
   const allowed = Math.min(count, MAX_BUBBLES - bubbles.length);
   const safeY = canvas.height > 150 ? 70 : 0;
   const safeH = canvas.height > 150 ? canvas.height - 150 : canvas.height;
-  const scaleX = canvas.width / CANVAS_W;
-  const scaleY = safeH / CANVAS_H;
+  let scaleX = canvas.width / CANVAS_W;
+  let scaleY = safeH / CANVAS_H;
+  if (canvas.height > canvas.width) {
+    scaleX *= 0.8;
+    scaleY *= 0.8;
+  }
   for (let i = 0; i < allowed; i++) {
     bubbles.push({
       x: (CANVAS_W * 0.5 + (Math.random() - 0.5) * 160) * scaleX,
@@ -883,8 +887,12 @@ function draw() {
   const h = canvas.height;
   const safeY = h > 150 ? 70 : 0;
   const safeH = h > 150 ? h - 150 : h;
-  const scaleX = w / CANVAS_W;
-  const scaleY = safeH / CANVAS_H;
+  let scaleX = w / CANVAS_W;
+  let scaleY = safeH / CANVAS_H;
+  if (h > w) {
+    scaleX *= 0.8;
+    scaleY *= 0.8;
+  }
 
   ctx.clearRect(0, 0, w, h);
 
