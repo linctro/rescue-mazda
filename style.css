@@ -569,10 +569,23 @@ body {
 
 .result-buttons {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  justify-content: center;
   margin-top: 1.5rem;
-  flex-wrap: wrap;
+  width: 100%;
+}
+
+.result-button-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.result-button-row button {
+  flex: 1;
+  padding: 0.8rem 0.5rem;
+  font-size: 0.9rem;
 }
 
 .btn-share {
@@ -618,10 +631,7 @@ body {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-.result-buttons {
-  flex-wrap: wrap;
-  gap: 10px;
-}
+
 
 /* ============================================
    Animations
