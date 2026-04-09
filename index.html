@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head prefix="og: https//ogp.me/ns# fb: https//ogp.me/ns/fb# article: https//ogp.me/ns/article#">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-eqive="X-UA-Compatible" content="IE=edge" />
+  <title>マツダ危機一髪！</title>
+  
+
+  <!-- OGP -->
+  <meta property="og:title" content="【マツダ危機一髪！】">
+  <meta property="og:description" content="ビール樽からマツダを救え！連打ゲーム">
+  <meta property="og:image" content="https://netlify.app/assets/img/mazda-dead.png">
+  <meta property="og:url" content="https://example.netlify.app">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="マツダ危機一髪！" />
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:creator" content="@1hayaDSGN" />
+
+  <!-- Favicon -->
+  <link rel="icon" href="./assets/img/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180*180" href="./assets/img/apple-touch-icon-180x180.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles/destyle.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-wrapper">
+    <!-- Intro Screen -->
+    <div id="intro-screen" class="screen active">
+      <canvas id="intro-canvas"></canvas>
+      <button id="intro-skip-btn">▶ スキップ</button>
+    </div>
+
+    <!-- Title Screen -->
+    <div id="title-screen" class="screen">
+      <div class="title-content">
+        <h1 class="game-title">
+          <span class="title-mazda">マツダ</span>
+          <span class="title-kiki">危機一髪！</span>
+        </h1>
+        <p class="title-sub">ビール樽からマツダを救え！</p>
+        <p class="title-desc">連打で炭酸圧を高めろ！<br>でも無理しすぎると…？</p>
+        <button id="start-btn" class="btn-primary">
+          <span class="btn-icon">🍺</span>
+          ゲームスタート
+        </button>
+        <button id="title-ranking-btn" class="btn-secondary" style="margin-top: 1rem;">
+          <span class="btn-icon">🏆</span>
+          ランキングを見る
+        </button>
+      </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Gauges Overlay -->
+      <div id="gauges">
+        <div class="gauge-row">
+          <div class="gauge" id="gauge-stamina">
+            <span class="gauge-label"><img src="assets/img/stamina-icon.png" class="gauge-icon" alt="体力"> 体力</span>
+            <div class="gauge-track">
+              <div class="gauge-fill" id="stamina-fill"></div>
+            </div>
+            <span class="gauge-value" id="stamina-value">100</span>
+          </div>
+          <div class="gauge" id="gauge-carbonation">
+            <span class="gauge-label"><img src="assets/img/carbonation-icon.png" class="gauge-icon" alt="炭酸"> 炭酸</span>
+            <div class="gauge-track">
+              <div class="gauge-fill" id="carbonation-fill"></div>
+            </div>
+            <span class="gauge-value" id="carbonation-value">0</span>
+          </div>
+          <div class="gauge" id="gauge-barrel">
+            <span class="gauge-label"><img src="assets/img/barrel-icon.png" class="gauge-icon" alt="樽耐久"> 樽耐久</span>
+            <div class="gauge-track">
+              <div class="gauge-fill" id="barrel-fill"></div>
+            </div>
+            <span class="gauge-value" id="barrel-value">100</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pump Button -->
+      <div id="pump-area">
+        <button id="pump-btn">
+          
+          <span class="pump-text">ポンプ！</span>
+        </button>
+        <p class="pump-hint">連打して炭酸を溜めろ！</p>
+      </div>
+    </div>
+
+    <!-- Result Screen -->
+    <div id="result-screen" class="screen">
+      <!-- 開くボタン（デフォルト非表示） -->
+      <button id="reopen-result-btn" class="reopen-result-btn" style="display: none;">📄 結果を見る</button>
+
+      <div id="result-card" class="result-card">
+        <!-- 閉じるボタン -->
+        <button id="close-result-btn" class="close-result-btn" aria-label="閉じる">✖</button>
+        
+        <h2 id="result-title" class="result-title"></h2>
+        <div id="result-icon" class="result-icon"></div>
+        <div class="result-score-area">
+          <p class="result-label">スコア</p>
+          <p id="result-score" class="result-score">0</p>
+          <p class="result-unit">点</p>
+        </div>
+        <div id="result-details" class="result-details"></div>
+        <div class="result-message" id="result-message"></div>
+
+        <!-- スコア登録フォーム -->
+        <div id="score-submit-area" class="score-submit-area">
+          <input type="text" id="player-name-input" class="player-name-input" placeholder="ユーザー名10文字以内">
+          <button id="submit-score-btn" class="btn-submit-score">スコアを登録</button>
+        </div>
+        <div id="submit-message" class="submit-message" style="display: none;"></div>
+
+        <div class="result-buttons">
+          <button id="share-btn" class="btn-share">
+            <span>𝕏</span> で共有
+          </button>
+          <button id="result-ranking-btn" class="btn-share" style="background:#202a40;">
+            🏆 ランキング
+          </button>
+          <button id="retry-btn" class="btn-primary">
+            🔄 もう一回
+          </button>
+          <button id="title-back-btn" class="btn-title-back">
+            🎬 ストーリーを見る
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Ranking Screen -->
+    <div id="ranking-screen" class="screen">
+      <div class="ranking-card">
+        <button id="close-ranking-btn" class="close-ranking-btn" aria-label="閉じる">✖</button>
+        <h2 class="ranking-title">🏆 リーダーボード</h2>
+        
+        <div class="ranking-header">
+          <div class="rank-col">順位</div>
+          <div class="name-col">名前</div>
+          <div class="score-col">スコア</div>
+          <div class="date-col">日付</div>
+        </div>
+        
+        <div id="ranking-list" class="ranking-list">
+          <div class="ranking-loading">読み込み中...</div>
+          <!-- JSで自動生成 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
