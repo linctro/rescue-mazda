@@ -265,8 +265,8 @@ function truncateToGraphemes(text, limit) {
 
 // 名前入力の制限（リアルタイム）
 playerNameInput.addEventListener('input', () => {
-  if (getGraphemeLength(playerNameInput.value) > 10) {
-    playerNameInput.value = truncateToGraphemes(playerNameInput.value, 10);
+  if (getGraphemeLength(playerNameInput.value) > 6) {
+    playerNameInput.value = truncateToGraphemes(playerNameInput.value, 6);
   }
 });
 
@@ -276,8 +276,8 @@ submitScoreBtn.addEventListener('click', async () => {
     alert("名前を入力してください");
     return;
   }
-  if (getGraphemeLength(name) > 10) {
-    alert("名前は10文字以内で入力してください");
+  if (getGraphemeLength(name) > 6) {
+    alert("名前は6文字以内で入力してください");
     return;
   }
   if (GAS_API_URL === "YOUR_WEB_APP_URL") {
