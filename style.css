@@ -911,7 +911,7 @@ body {
   padding: 8px 10px;
   color: #fff;
   font-family: var(--font-main);
-  font-size: 0.9rem;
+  font-size: 16px; /* iOSの自動ズーム防止のために16px以上にする */
   outline: none;
 }
 .player-name-input:focus {
