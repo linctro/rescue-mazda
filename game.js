@@ -1039,7 +1039,7 @@ function drawBarrel(x, y, sx, sy) {
     if (hImg && hImg.complete && hImg.naturalWidth) {
       // 樽と同じ幅で上部レイヤーに描画する
       const hh = drawW * (hImg.naturalHeight / hImg.naturalWidth);
-      ctx.drawImage(hImg, drawX, drawY - 100 * sy, drawW, hh);
+      ctx.drawImage(hImg, drawX, drawY - 115 * sy, drawW, hh);
     }
   }
 
@@ -1205,7 +1205,7 @@ function drawPlayer(x, y, sx, sy) {
   // 体力低下時のあえぎテキスト
   if (stamina < 25 && !isDown) {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-    ctx.font = `bold ${14 * sx}px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.font = `bold ${45 * sx}px ${getComputedStyle(document.body).fontFamily}`;
     ctx.textAlign = 'center';
     ctx.fillText('ハァ...ハァ...', 0, -175 * sy);
     ctx.textAlign = 'left';
@@ -1231,7 +1231,7 @@ function drawPlayer(x, y, sx, sy) {
 function drawGoats(x, y, sx, sy) {
   // ゲーム終了状態（GAMEOVER または CLEAR）
   const isGameEnded = (state === GameState.GAMEOVER || state === GameState.CLEAR);
-  const isPumping   = (playerState === 'pump') && !isGameEnded;
+  const isPumping = (playerState === 'pump') && !isGameEnded;
 
   // フレーム0/1 の決定（goatAnimFrame は update() 内で毎フレーム更新）
   const frame = goatAnimFrame; // 0 or 1
