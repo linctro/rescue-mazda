@@ -42,7 +42,7 @@ const GameState = {
 };
 
 // 制限時間: 3分 (60fps × 180秒)
-const TIME_LIMIT_FRAMES = 60 * 10;
+const TIME_LIMIT_FRAMES = 60 * 180;
 
 let state = GameState.TITLE;
 let stamina = CONFIG.stamina.max;
