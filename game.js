@@ -41,6 +41,9 @@ const GameState = {
   GAMEOVER: 'gameover',
 };
 
+// 制限時間: 3分 (60fps × 180秒)
+const TIME_LIMIT_FRAMES = 60 * 10;
+
 let state = GameState.TITLE;
 let stamina = CONFIG.stamina.max;
 let carbonation = 0;
@@ -53,6 +56,15 @@ let playFrames = 0;
 let dangerFrames = 0;
 let totalPumps = 0;
 let totalCarbonation = 0;
+
+// タイムアップアニメーション状態
+// 'none' | 'entering' | 'talking' | 'done'
+let timeupAnimPhase = 'none';
+let timeupAnimTimer = 0;
+let timeupEnemyX = 0;       // 画面右からの借金取りX座標（論理幅比率）
+let timeupTalkFrame = 0;    // enemy-02/06/05 切り替えカウンタ
+const TIMEUP_ENTER_FRAMES = 90;  // 登場（右から歩いてくる）フレーム数
+const TIMEUP_TALK_FRAMES  = 120; // セリフ表示フレーム数
 
 // --- Animation State ---
 let barrelShakeX = 0;
@@ -452,6 +464,11 @@ function initGame() {
   mazdaFlyVY = 0;
   mazdaDeadFrame = 1;
   barrelDeadShakeX = 0;
+  // タイムアップアニメーション初期化
+  timeupAnimPhase = 'none';
+  timeupAnimTimer = 0;
+  timeupEnemyX = 0;
+  timeupTalkFrame = 0;
   state = GameState.PLAYING;
   updateGaugeUI();
 }
@@ -629,6 +646,20 @@ function update() {
     worriedShakeTimer = 0;
   }
 
+  // タイムアップ判定（3分経過）
+  if (playFrames >= TIME_LIMIT_FRAMES) {
+    state = GameState.GAMEOVER;
+    gameoverReason = 'timeout';
+    playerState = 'down';
+    timeupAnimPhase = 'entering';
+    timeupAnimTimer = 0;
+    timeupEnemyX = canvas.width + 200; // 画面外右から開始
+    timeupTalkFrame = 0;
+    updateGaugeUI();
+    // showResult はアニメ完了後に呼ぶ
+    return;
+  }
+
   // Lose conditions
   if (stamina <= 0) {
     stamina = 0;
@@ -704,6 +735,33 @@ const DEATH_BARREL2_FRAMES = 20;  // barrel-dead02に切り替わる停止時間
 const DEATH_FLY_FRAMES = 50;  // mazda-dead02が飛んで落ちる
 const DEATH_DEAD3_FRAMES = 40;  // mazda-dead03 表示
 const DEATH_DEAD4_FRAMES = 60;  // mazda-dead04 表示してから結果へ
+
+// --- Timeup Animation (時間切れ時) ---
+function updateTimeupAnim() {
+  if (timeupAnimPhase === 'none' || timeupAnimPhase === 'done') return;
+
+  timeupAnimTimer++;
+  timeupTalkFrame = Math.floor(timeupAnimTimer / 15) % 3; // 0=enemy-02, 1=enemy-06, 2=enemy-05（しゃべり）
+
+  if (timeupAnimPhase === 'entering') {
+    // 右から画面内へ歩いてくる
+    const progress = Math.min(1, timeupAnimTimer / TIMEUP_ENTER_FRAMES);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const targetX = canvas.width * 0.78; // 画面右寄りに停止
+    timeupEnemyX = canvas.width + 200 + (targetX - canvas.width - 200) * eased;
+
+    if (timeupAnimTimer >= TIMEUP_ENTER_FRAMES) {
+      timeupAnimPhase = 'talking';
+      timeupAnimTimer = 0;
+      timeupEnemyX = canvas.width * 0.78;
+    }
+  } else if (timeupAnimPhase === 'talking') {
+    if (timeupAnimTimer >= TIMEUP_TALK_FRAMES) {
+      timeupAnimPhase = 'done';
+      showResult();
+    }
+  }
+}
 
 function updateDeathAnim() {
   if (deathAnimPhase === 'none' || deathAnimPhase === 'done') return;
@@ -815,6 +873,16 @@ function showResult() {
     resultTitle.className = 'result-title clear';
     resultIcon.innerHTML = '<img src="assets/img/mazda-happy01.png" style="height:80px;object-fit:contain;">';
     resultMessage.innerHTML = '樽からマツダを救い出した！<br>借金取りを追い払え！🍺';
+  } else if (gameoverReason === 'timeout') {
+    // タイムアップ専用
+    title = "【タイムアップ】";
+    bonusName = "借金取り登場ボーナス";
+    bonusScore = 500;
+
+    resultTitle.textContent = '⏰ タイムアップ！';
+    resultTitle.className = 'result-title gameover';
+    resultIcon.innerHTML = '<img src="assets/img/mazda-dead.png" style="height:80px;object-fit:contain;">';
+    resultMessage.innerHTML = '時間切れ！借金取りがやって来た！<br>マツダは連れ去られてしまった…😱';
   } else {
     // 称号の判定 (GAMEOVER)
     if (playSeconds < 5 && gameoverReason === 'barrel') {
@@ -970,6 +1038,16 @@ function draw() {
     const flashAlpha = Math.max(0, 0.15 * Math.sin(deathAnimTimer * 0.3));
     ctx.fillStyle = `rgba(255, 60, 0, ${flashAlpha})`;
     ctx.fillRect(0, 0, w, h);
+  }
+
+  // タイムアップ: 借金取りアニメーション描画
+  if (state === GameState.GAMEOVER && gameoverReason === 'timeout' && timeupAnimPhase !== 'none') {
+    drawTimeupEnemy(w, h, scaleX, scaleY, safeY, safeH);
+  }
+
+  // タイマー表示（プレイ中）
+  if (state === GameState.PLAYING) {
+    drawTimer(w, h);
   }
 }
 
@@ -1339,11 +1417,113 @@ function drawClearAnimation(w, h, sx, sy, safeY, safeH) {
     ctx.save();
     ctx.globalAlpha = textAlpha;
     ctx.fillStyle = '#f0c030';
-    ctx.font = `bold ${48 * sx}px 'Noto Sans JP', sans-serif`;
+    ctx.font = `bold ${48 * sx}px 'DotGothic16', sans-serif`;
     ctx.textAlign = 'center';
     ctx.shadowColor = 'rgba(240, 192, 48, 0.8)';
     ctx.shadowBlur = 30;
     ctx.fillText('救出成功！', w / 2, h / 2);
+    ctx.restore();
+  }
+}
+
+// --- Timer Draw ---
+function drawTimer(w, h) {
+  const remainFrames = Math.max(0, TIME_LIMIT_FRAMES - playFrames);
+  const remainSec = Math.ceil(remainFrames / 60);
+  const minutes = Math.floor(remainSec / 60);
+  const seconds = remainSec % 60;
+  const timeStr = `${minutes}:${String(seconds).padStart(2, '0')}`;
+
+  const isUrgent = remainSec <= 30;
+  const alpha = isUrgent ? (0.7 + 0.3 * Math.sin(playFrames * 0.3)) : 1;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = `bold ${Math.round(22 * (w / 390))}px 'DotGothic16', monospace`;
+  ctx.textAlign = 'right';
+  ctx.fillStyle = isUrgent ? '#ff4444' : 'rgba(240,230,210,0.9)';
+  ctx.shadowColor = isUrgent ? 'rgba(255,0,0,0.6)' : 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = isUrgent ? 12 : 4;
+  ctx.fillText(`⏱ ${timeStr}`, w - 12, 50);
+  ctx.restore();
+}
+
+// --- Timeup Enemy Draw ---
+function drawTimeupEnemy(w, h, sx, sy, safeY, safeH) {
+  const floorY = safeY + safeH * 0.75;
+  const enemyLogicW = 220;
+  const drawW = enemyLogicW * sx;
+
+  // 借金取りの画像キー決定
+  // enemy-02: 歩き1, enemy-06: 歩き2, enemy-05: しゃべり
+  let enemyKey;
+  if (timeupAnimPhase === 'entering') {
+    // 歩き: enemy-02/enemy-06 交互
+    enemyKey = Math.floor(timeupAnimTimer / 8) % 2 === 0 ? 'debtor02' : 'debtor06';
+  } else {
+    // しゃべり: enemy-02/enemy-05/enemy-06 のサイクル
+    const cycle = Math.floor(timeupAnimTimer / 15) % 3;
+    if (cycle === 2) {
+      enemyKey = 'debtor05'; // enemy-05: しゃべり
+    } else if (cycle === 1) {
+      enemyKey = 'debtor06'; // enemy-06
+    } else {
+      enemyKey = 'debtor02'; // enemy-02
+    }
+  }
+
+  const img = images[enemyKey];
+  if (img && img.complete && img.naturalWidth) {
+    const drawH = drawW * (img.naturalHeight / img.naturalWidth);
+    const drawX = timeupEnemyX - drawW / 2;
+    const drawY = floorY - drawH;
+    // 左向き（画面右から来るので反転）
+    ctx.save();
+    ctx.translate(timeupEnemyX, floorY - drawH / 2);
+    ctx.scale(-1, 1); // 左向き反転
+    ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+    ctx.restore();
+  }
+
+  // しゃべりフェーズ および 完了後: 吹き出しとセリフ
+  if (timeupAnimPhase === 'talking' || timeupAnimPhase === 'done') {
+    // done 状態の場合は完全に不透明にする
+    const textAlpha = timeupAnimPhase === 'done' ? 1 : Math.min(1, timeupAnimTimer / 20);
+    const bubbleX = timeupEnemyX - 120 * sx;
+    const bubbleY = floorY - 250 * sy;
+
+    ctx.save();
+    ctx.globalAlpha = textAlpha;
+
+    // 吹き出し背景
+    const bw = 480 * sx;
+    const bh = 80 * sy;
+    const bx = bubbleX - bw / 2;
+    const by = bubbleY - bh / 2;
+    ctx.fillStyle = 'rgba(255, 250, 230, 0.95)';
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 15);
+    ctx.fill();
+    ctx.stroke();
+
+    // 吹き出しのしっぽ（三角形）
+    ctx.fillStyle = 'rgba(255, 250, 230, 0.95)';
+    ctx.beginPath();
+    ctx.moveTo(bubbleX + 20 * sx, by + bh);
+    ctx.lineTo(bubbleX + 40 * sx, by + bh + 25 * sy);
+    ctx.lineTo(bubbleX + 60 * sx, by + bh);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // セリフテキスト
+    ctx.fillStyle = '#1a0a00';
+    ctx.font = `bold ${Math.round(56 * sx)}px 'DotGothic16', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.shadowBlur = 0;
+    ctx.fillText('何してやがる！', bubbleX, bubbleY + 12 * sy);
     ctx.restore();
   }
 }
@@ -1375,6 +1555,8 @@ function gameLoop() {
   }
   // 樽破壊死亡アニメを毎フレーム更新
   updateDeathAnim();
+  // タイムアップアニメを毎フレーム更新
+  updateTimeupAnim();
   // ヤギアニメは全状態で毎フレーム更新
   updateGoatAnim();
   draw();
@@ -1447,7 +1629,7 @@ function introDraw(iCtx, key, cx, cy, w, flipH) {
 
 // テキスト描画ヘルパー
 function introText(iCtx, text, x, y, size, color, shadowColor) {
-  iCtx.font = `bold ${size}px 'Noto Sans JP', sans-serif`;
+  iCtx.font = `bold ${size}px 'DotGothic16', sans-serif`;
   iCtx.fillStyle = color || 'rgba(240,230,210,0.95)';
   iCtx.textAlign = 'center';
   if (shadowColor) {
@@ -1663,7 +1845,7 @@ function drawIntroScene(iCtx, iW, iH) {
       const excShake = sceneF < arriveF + 25 ? Math.sin(sceneF * 1.8) * iW * 0.01 : 0;
       iCtx.save();
       iCtx.globalAlpha = alpha * excAlpha;
-      iCtx.font = `900 ${iW * 0.10}px 'Noto Sans JP', sans-serif`;
+      iCtx.font = `900 ${iW * 0.10}px 'DotGothic16', sans-serif`;
       iCtx.fillStyle = '#ffe040';
       iCtx.textAlign = 'center';
       iCtx.shadowColor = 'rgba(255,200,0,0.9)';
@@ -1710,7 +1892,7 @@ function drawIntroScene(iCtx, iW, iH) {
     iCtx.restore();
 
     iCtx.fillStyle = 'rgba(240,230,210,0.85)';
-    iCtx.font = `${iW * 0.036}px 'Noto Sans JP', sans-serif`;
+    iCtx.font = `${iW * 0.036}px 'DotGothic16', sans-serif`;
     iCtx.textAlign = 'center';
     iCtx.fillText('ポンプで炭酸圧を高めて樽を吹き飛ばせ！', cx, cy + iH * 0.30);
     iCtx.restore();
