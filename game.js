@@ -1531,7 +1531,7 @@ function drawTimeupEnemy(w, h, sx, sy, safeY, safeH) {
 // --- X Share ---
 function shareOnX() {
   const gameUrl = window.location.href;
-  const text = `マツダ危機一髪！\n俺のスコア ${score}点\nもう来なくていい🤝\n\n${gameUrl}`;
+  const text = `マツダ危機一髪！\nマイスコア ${score}点\nもっと救いたい🤝\n\n${gameUrl}`;
   window.open(
     `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
     '_blank'
